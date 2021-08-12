@@ -1,5 +1,6 @@
-// CFXS Framework Low Level Network Module <https://github.com/CFXS/CFXS-IP>
-// Copyright (C) 2021 - CFXS / Rihards Veips
+// ---------------------------------------------------------------------
+// CFXS Framework Ethernet Module <https://github.com/CFXS/CFXS-IP>
+// Copyright (C) 2021 | CFXS / Rihards Veips
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -8,9 +9,18 @@
 // 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 // 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
+// ---------------------------------------------------------------------
 // [CFXS] //
+
+#if !defined(CFXS_IP_IPv4) && !defined(CFXS_IP_IPv6)
+    #error CFXS_IP_IPv? not defined
+#else
+    #if !(defined(CFXS_IP_IPv4) ^ defined(CFXS_IP_IPv6))
+        #error CFXS_IP_IPv4 and CFXS_IP_IPv6 defined at the same time
+    #endif
+#endif

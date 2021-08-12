@@ -18,40 +18,22 @@
 // [CFXS] //
 #pragma once
 
-#include <CFXS/Base/Network/IPv4.hpp>
-#include <CFXS/Base/Network/MAC_Address.hpp>
-#include <CFXS/IP/_Config.hpp>
+namespace CFXS {
 
-namespace CFXS::IP {
+    class MAC_Address;
+    class IPv4;
+    class IPv6;
 
-    class NetworkInterface {
-    public:
-        NetworkInterface(const MAC_t& mac, const IP_t& ip, const Subnet_t& subnet, const IP_t& gateway = IP_t::BROADCAST());
+    namespace IP {
 
-        inline void SetMAC(const MAC_t& mac);
-        inline MAC_t& GetMAC();
-        inline const MAC_t& GetMAC() const;
+        using MAC_t = MAC_Address;
+#if CFXS_IP_IPv4
+        using IP_t     = IPv4;
+        using Subnet_t = IP_t;
+#else
+        using IP_Address = IPv6;
+        using Subnet_t   = uint8_t;
+#endif
 
-        inline void SetIP(const IP_t& mac);
-        inline IP_t& GetIP();
-        inline const IP_t& GetIP() const;
-
-        inline void SetSubnet(const Subnet_t& mac);
-        inline Subnet_t& GetSubnet();
-        inline const Subnet_t& GetSubnet() const;
-
-    private:
-        // Do not allow to delete
-        ~NetworkInterface();
-
-        void ConfigUpdated();
-
-    private:
-        MAC_t m_MAC;
-
-        IP_t m_IP;
-        Subnet_t m_Subnet;
-        IP_t m_Gateway;
-    };
-
-} // namespace CFXS::IP
+    } // namespace IP
+} // namespace CFXS
