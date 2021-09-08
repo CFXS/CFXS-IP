@@ -1,22 +1,25 @@
 // ---------------------------------------------------------------------
 // CFXS Framework Ethernet Module <https://github.com/CFXS/CFXS-IP>
 // Copyright (C) 2021 | CFXS / Rihards Veips
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 // ---------------------------------------------------------------------
 // [CFXS] //
+// Initialization code based on Texas Instruments lwIP port
 #ifdef CFXS_PLATFORM_TIVA
+
+    #include <cstdlib> // malloc
 
     #include <CFXS/Base/Debug.hpp>
     #include <CFXS/IP/_LoggerConfig.hpp>
@@ -24,6 +27,7 @@
     #include <CFXS/Base/CPU.hpp>
     #include <CFXS/Base/Platform.hpp>
     #include <CFXS/Base/MAC_Address.hpp>
+    #include <CFXS/IP/TransferBuffer.hpp>
     #include <driverlib/sysctl.h>
     #include <driverlib/emac.h>
     #include <driverlib/rom.h>
@@ -31,8 +35,6 @@
     #include <inc/hw_memmap.h>
     #include <inc/hw_emac.h>
     #include <inc/hw_ints.h>
-
-    #include <cstdlib> // malloc
 
     #if defined(CFXS_IP_HW_PHY_INTERNAL)
         #define EMAC_PHY_CONFIG EMAC_PHY_TYPE_INTERNAL
@@ -47,12 +49,15 @@
 
 namespace CFXS::IP {
 
+    static constexpr int MTU = 1500;
+
     // psNetif->output     = etharp_output;
     // psNetif->linkoutput = tivaif_transmit;
 
     struct Descriptor {
         tEMACDMADescriptor desc;
-        uint8_t buffer[2048];
+        uint8_t *buffer;
+        //TransferBuffer *tbuf;
     };
 
     struct DescriptorList {
@@ -82,8 +87,8 @@ namespace CFXS::IP {
 
         for (int i = 0; i < CFXS_IP_HW_RX_DESCRIPTORS; i++) {
             //s_RX_Descriptors[i].buffer         = (uint8_t *)malloc(2048);
-            memset(s_RX_Descriptors[i].buffer, 0, 2048);
-            s_RX_Descriptors[i].desc.ui32Count = DES1_RX_CTRL_CHAINED;
+            //memset(s_RX_Descriptors[i].buffer, 0, 2048);
+            //s_RX_Descriptors[i].desc.ui32Count = DES1_RX_CTRL_CHAINED;
             if (s_RX_Descriptors[i].buffer) {
                 /* Set the DMA to write directly into the pbuf payload. */
                 //s_RX_Descriptors[i].desc.pvBuffer1 = s_RX_Descriptors[i].pBuf->payload;
@@ -92,7 +97,7 @@ namespace CFXS::IP {
                 s_RX_Descriptors[i].desc.ui32Count |= (2048 << DES1_RX_CTRL_BUFF1_SIZE_S);
                 s_RX_Descriptors[i].desc.ui32CtrlStatus = DES0_RX_CTRL_OWN;
             } else {
-                NetworkLogger_Base::LogWarning("Buffer not available for RX descriptor %u", i);
+                //NetworkLogger_Base::LogWarning("Buffer not available for RX descriptor %u", i);
                 s_RX_Descriptors[i].desc.pvBuffer1      = 0;
                 s_RX_Descriptors[i].desc.ui32CtrlStatus = 0;
             }
@@ -188,6 +193,7 @@ namespace CFXS::IP {
         InitializeDescriptors();
 
     #if defined(CFXS_IP_HW_PHY_EXTERNAL_MII) || defined(CFXS_IP_HW_PHY_EXTERNAL_RMII)
+        // Reset external PHY
         EMACPHYWrite(EMAC0_BASE, PHY_PHYS_ADDR, EPHY_BMCR, EPHY_BMCR_MIIRESET);
         while ((EMACPHYRead(EMAC0_BASE, PHY_PHYS_ADDR, EPHY_BMCR) & EPHY_BMCR_MIIRESET) == EPHY_BMCR_MIIRESET)
             ;
@@ -211,6 +217,7 @@ namespace CFXS::IP {
 
         EMACFrameFilterSet(EMAC0_BASE, (EMAC_FRMFILTER_HASH_AND_PERFECT | EMAC_FRMFILTER_PASS_MULTICAST));
 
+        // TODO: find out how PTP works. will be useful later maybe
         // PTP
         // Enable timestamping on all received packets.
         //
